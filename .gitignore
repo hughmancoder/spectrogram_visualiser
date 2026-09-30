@@ -1,0 +1,27 @@
+# Build artifacts
+build/
+*.json
+*.fs
+*.vvp
+*.vcd
+
+# Toolchains and temporary archives
+.toolchain/
+*.tgz
+*.tar.gz
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Editor / IDE artifacts
+.vscode/
+.idea/
+*.swp
+*~
+
+Notes.md

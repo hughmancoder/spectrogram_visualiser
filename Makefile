@@ -1,0 +1,177 @@
+# ==============================================================================
+# Makefile for Tang Nano 20K (Gowin GW2AR-LV18)
+# Supports OSS CAD Suite (Yosys, nextpnr-himbaechel, Apicula/gowin_pack, openFPGALoader)
+# ==============================================================================
+
+PROJECT    ?= top
+DEVICE     ?= GW2AR-LV18QN88C8/I7
+FAMILY     ?= GW2A-18C
+BOARD      ?= tangnano20k
+
+SRCS       ?= src/top.v
+CST        ?= constraints/tangnano20k.cst
+TB_SRCS    ?= sim/top_tb.v $(SRCS)
+
+BUILD_DIR  ?= build
+
+# Auto-detect OSS CAD Suite path if installed in standard locations
+OSS_CAD_PATHS := $(HOME)/oss-cad-suite/bin /opt/oss-cad-suite/bin $(CURDIR)/.toolchain/oss-cad-suite/bin
+FOUND_OSS_CAD := $(firstword $(wildcard $(OSS_CAD_PATHS)))
+ifneq ($(FOUND_OSS_CAD),)
+    export PATH := $(FOUND_OSS_CAD):$(PATH)
+    CAD_BIN     := $(FOUND_OSS_CAD)/
+else
+    CAD_BIN     :=
+endif
+
+# Toolchain executables (resolves to CAD_BIN full path if OSS CAD Suite is detected)
+YOSYS           ?= $(CAD_BIN)yosys
+GOWIN_PACK      ?= $(CAD_BIN)gowin_pack
+OPENFPGALOADER  ?= $(CAD_BIN)openFPGALoader
+IVERILOG        ?= $(CAD_BIN)iverilog
+VVP             ?= $(CAD_BIN)vvp
+GTKWAVE         ?= $(CAD_BIN)gtkwave
+
+# Detect nextpnr flavor: nextpnr-himbaechel is preferred for GW2A/GW2AR
+ifneq ($(wildcard $(CAD_BIN)nextpnr-himbaechel),)
+    PNR := $(CAD_BIN)nextpnr-himbaechel
+    PNR_FLAGS := --device $(DEVICE) --vopt family=$(FAMILY) --vopt cst=$(CST)
+else ifneq ($(wildcard $(CAD_BIN)nextpnr-gowin),)
+    PNR := $(CAD_BIN)nextpnr-gowin
+    PNR_FLAGS := --device $(DEVICE) --cst $(CST)
+else ifneq ($(shell which nextpnr-himbaechel 2>/dev/null),)
+    PNR := nextpnr-himbaechel
+    PNR_FLAGS := --device $(DEVICE) --vopt family=$(FAMILY) --vopt cst=$(CST)
+else ifneq ($(shell which nextpnr-gowin 2>/dev/null),)
+    PNR := nextpnr-gowin
+    PNR_FLAGS := --device $(DEVICE) --cst $(CST)
+else
+    PNR := $(CAD_BIN)nextpnr-himbaechel
+    PNR_FLAGS := --device $(DEVICE) --vopt family=$(FAMILY) --vopt cst=$(CST)
+endif
+
+# Output artifacts
+JSON       := $(BUILD_DIR)/$(PROJECT).json
+PNR_JSON   := $(BUILD_DIR)/$(PROJECT)_pnr.json
+BITSTREAM  := $(BUILD_DIR)/$(PROJECT).fs
+SIM_VVP    := $(BUILD_DIR)/sim.vvp
+VCD_FILE   := $(BUILD_DIR)/$(PROJECT)_tb.vcd
+
+# Default target
+.PHONY: all
+all: bitstream
+
+# Help target
+.PHONY: help
+help:
+	@echo "Tang Nano 20K FPGA Build System (macOS / Linux)"
+	@echo "----------------------------------------------------"
+	@echo "  make             - Build the complete bitstream ($(BITSTREAM))"
+	@echo "  make synth       - Run synthesis with Yosys"
+	@echo "  make pnr         - Run Place & Route with $(PNR)"
+	@echo "  make pack        - Pack into Gowin bitstream (.fs)"
+	@echo "  make flash-sram  - Fast upload directly to FPGA SRAM (non-persistent)"
+	@echo "  make flash       - Program onboard SPI Flash (persistent across reboot)"
+	@echo "  make sim         - Run Verilog simulation with Icarus Verilog"
+	@echo "  make waves       - Open simulation waveforms in GTKWave / Surfer"
+	@echo "  make clean       - Clean build artifacts"
+	@echo "  make check-tools - Verify toolchain installation status"
+	@echo "  make setup-toolchain - Download & install OSS CAD Suite for macOS"
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+# ------------------------------------------------------------------------------
+# 1. Synthesis (Yosys)
+# ------------------------------------------------------------------------------
+.PHONY: synth
+synth: $(JSON)
+
+$(JSON): $(SRCS) | $(BUILD_DIR)
+	@echo "==> Synthesizing with Yosys..."
+	$(YOSYS) -p "synth_gowin -top $(PROJECT) -json $(JSON)" $(SRCS)
+
+# ------------------------------------------------------------------------------
+# 2. Place & Route (nextpnr-himbaechel / nextpnr-gowin)
+# ------------------------------------------------------------------------------
+.PHONY: pnr
+pnr: $(PNR_JSON)
+
+$(PNR_JSON): $(JSON) $(CST)
+	@echo "==> Running Place & Route with $(PNR)..."
+	$(PNR) --json $(JSON) --write $(PNR_JSON) $(PNR_FLAGS)
+
+# ------------------------------------------------------------------------------
+# 3. Bitstream Generation (gowin_pack / Apicula)
+# ------------------------------------------------------------------------------
+.PHONY: bitstream pack
+bitstream: $(BITSTREAM)
+pack: $(BITSTREAM)
+
+$(BITSTREAM): $(PNR_JSON)
+	@echo "==> Generating Gowin bitstream (.fs)..."
+	$(GOWIN_PACK) -d $(FAMILY) -o $(BITSTREAM) $(PNR_JSON)
+	@echo "==> Bitstream successfully created: $(BITSTREAM)"
+
+# ------------------------------------------------------------------------------
+# 4. Programming / Flashing (openFPGALoader)
+# ------------------------------------------------------------------------------
+# Fast SRAM download for rapid test iteration
+.PHONY: flash-sram load
+flash-sram load: $(BITSTREAM)
+	@echo "==> Loading bitstream into FPGA SRAM (fast, volatile)..."
+	$(OPENFPGALOADER) -b $(BOARD) $(BITSTREAM)
+
+# Program onboard SPI flash for persistent boot
+.PHONY: flash flash-flash
+flash flash-flash: $(BITSTREAM)
+	@echo "==> Programming bitstream to onboard Flash (persistent)..."
+	$(OPENFPGALOADER) -b $(BOARD) -f $(BITSTREAM)
+
+# ------------------------------------------------------------------------------
+# 5. Simulation & Waveform Viewing (iverilog + vvp)
+# ------------------------------------------------------------------------------
+.PHONY: sim waves
+sim: $(SIM_VVP)
+	@echo "==> Running simulation..."
+	$(VVP) $(SIM_VVP)
+
+$(SIM_VVP): $(TB_SRCS) | $(BUILD_DIR)
+	@echo "==> Compiling testbench with iverilog..."
+	$(IVERILOG) -o $(SIM_VVP) -s top_tb $(TB_SRCS)
+
+waves: sim
+	@echo "==> Opening waveform in viewer..."
+	@if [ -x "$(GTKWAVE)" ] || command -v $(GTKWAVE) >/dev/null 2>&1; then \
+		$(GTKWAVE) $(VCD_FILE); \
+	elif command -v surfer >/dev/null 2>&1; then \
+		surfer $(VCD_FILE); \
+	else \
+		echo "Neither gtkwave nor surfer found. Please install via: brew install --cask gtkwave"; \
+	fi
+
+# ------------------------------------------------------------------------------
+# 6. Toolchain Check & Automated Installer
+# ------------------------------------------------------------------------------
+.PHONY: check-tools
+check-tools:
+	@echo "Checking toolchain components..."
+	@printf "%-20s: " "yosys" && (which $(YOSYS) 2>/dev/null || echo "MISSING")
+	@printf "%-20s: " "pnr" && (which $(PNR) 2>/dev/null || echo "MISSING")
+	@printf "%-20s: " "gowin_pack" && (which $(GOWIN_PACK) 2>/dev/null || echo "MISSING")
+	@printf "%-20s: " "openFPGALoader" && (which $(OPENFPGALOADER) 2>/dev/null || echo "MISSING")
+	@printf "%-20s: " "iverilog" && (which $(IVERILOG) 2>/dev/null || echo "MISSING")
+	@printf "%-20s: " "vvp" && (which $(VVP) 2>/dev/null || echo "MISSING")
+
+.PHONY: setup-toolchain
+setup-toolchain:
+	@chmod +x scripts/setup_toolchain.sh
+	@./scripts/setup_toolchain.sh
+
+# ------------------------------------------------------------------------------
+# 7. Clean
+# ------------------------------------------------------------------------------
+.PHONY: clean
+clean:
+	@echo "==> Cleaning build directory..."
+	@rm -rf $(BUILD_DIR)
