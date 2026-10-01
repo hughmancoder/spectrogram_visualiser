@@ -8,9 +8,18 @@ DEVICE     ?= GW2AR-LV18QN88C8/I7
 FAMILY     ?= GW2A-18C
 BOARD      ?= tangnano20k
 
-SRCS       ?= src/top.v
+SRCS       ?= $(wildcard src/*.v)
 CST        ?= constraints/tangnano20k.cst
-TB_SRCS    ?= sim/top_tb.v $(SRCS)
+
+# Testbench selection (e.g. make sim TB=top_tb or make sim TB=sim/top_tb.v)
+TB         ?= top_tb
+TB_NAME    := $(notdir $(basename $(TB)))
+ifeq ($(suffix $(TB)),.v)
+    TB_FILE := $(TB)
+else
+    TB_FILE := sim/$(TB_NAME).v
+endif
+TB_SRCS    := $(TB_FILE) $(SRCS)
 
 BUILD_DIR  ?= build
 
@@ -54,8 +63,8 @@ endif
 JSON       := $(BUILD_DIR)/$(PROJECT).json
 PNR_JSON   := $(BUILD_DIR)/$(PROJECT)_pnr.json
 BITSTREAM  := $(BUILD_DIR)/$(PROJECT).fs
-SIM_VVP    := $(BUILD_DIR)/sim.vvp
-VCD_FILE   := $(BUILD_DIR)/$(PROJECT)_tb.vcd
+SIM_VVP    := $(BUILD_DIR)/$(TB_NAME).vvp
+VCD_FILE   := $(BUILD_DIR)/$(TB_NAME).vcd
 
 # Default target
 .PHONY: all
@@ -72,8 +81,9 @@ help:
 	@echo "  make pack        - Pack into Gowin bitstream (.fs)"
 	@echo "  make flash-sram  - Fast upload directly to FPGA SRAM (non-persistent)"
 	@echo "  make flash       - Program onboard SPI Flash (persistent across reboot)"
-	@echo "  make sim         - Run Verilog simulation with Icarus Verilog"
-	@echo "  make waves       - Open simulation waveforms in GTKWave / Surfer"
+	@echo "  make sim         - Run default simulation (sim/top_tb.v)"
+	@echo "  make sim TB=name - Run specific testbench (e.g. TB=top_tb or TB=sim/my_tb.v)"
+	@echo "  make waves       - Open simulation waveforms in GTKWave / Surfer (supports TB=name)"
 	@echo "  make clean       - Clean build artifacts"
 	@echo "  make check-tools - Verify toolchain installation status"
 	@echo "  make setup-toolchain - Download & install OSS CAD Suite for macOS"
@@ -133,12 +143,12 @@ flash flash-flash: $(BITSTREAM)
 # ------------------------------------------------------------------------------
 .PHONY: sim waves
 sim: $(SIM_VVP)
-	@echo "==> Running simulation..."
+	@echo "==> Running simulation ($(TB_NAME))..."
 	$(VVP) $(SIM_VVP)
 
 $(SIM_VVP): $(TB_SRCS) | $(BUILD_DIR)
-	@echo "==> Compiling testbench with iverilog..."
-	$(IVERILOG) -o $(SIM_VVP) -s top_tb $(TB_SRCS)
+	@echo "==> Compiling testbench $(TB_FILE) with iverilog..."
+	$(IVERILOG) -o $(SIM_VVP) -s $(TB_NAME) $(TB_SRCS)
 
 waves: sim
 	@echo "==> Opening waveform in viewer..."
