@@ -8,16 +8,16 @@ DEVICE     ?= GW2AR-LV18QN88C8/I7
 FAMILY     ?= GW2A-18C
 BOARD      ?= tangnano20k
 
-SRCS       ?= $(wildcard src/*.v)
+SRCS       ?= $(wildcard src/*.sv)
 CST        ?= constraints/tangnano20k.cst
 
 # Testbench selection (e.g. make sim TB=top_tb or make sim TB=sim/top_tb.v)
 TB         ?= top_tb
 TB_NAME    := $(notdir $(basename $(TB)))
-ifeq ($(suffix $(TB)),.v)
+ifeq ($(suffix $(TB)),.sv)
     TB_FILE := $(TB)
 else
-    TB_FILE := sim/$(TB_NAME).v
+    TB_FILE := sim/$(TB_NAME).sv
 endif
 TB_SRCS    := $(TB_FILE) $(SRCS)
 
@@ -99,7 +99,7 @@ synth: $(JSON)
 
 $(JSON): $(SRCS) | $(BUILD_DIR)
 	@echo "==> Synthesizing with Yosys..."
-	$(YOSYS) -p "synth_gowin -top $(PROJECT) -json $(JSON)" $(SRCS)
+	$(YOSYS) -p "read_verilog -sv $(SRCS); synth_gowin -top $(PROJECT) -json $(JSON)"
 
 # ------------------------------------------------------------------------------
 # 2. Place & Route (nextpnr-himbaechel / nextpnr-gowin)
@@ -148,7 +148,7 @@ sim: $(SIM_VVP)
 
 $(SIM_VVP): $(TB_SRCS) | $(BUILD_DIR)
 	@echo "==> Compiling testbench $(TB_FILE) with iverilog..."
-	$(IVERILOG) -o $(SIM_VVP) -s $(TB_NAME) $(TB_SRCS)
+	$(IVERILOG) -g2012 -o $(SIM_VVP) -s $(TB_NAME) $(TB_SRCS)
 
 waves: sim
 	@echo "==> Opening waveform in viewer..."

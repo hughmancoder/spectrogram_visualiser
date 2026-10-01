@@ -1,6 +1,6 @@
-# Spectrogram Visualiser (Tang Nano 20K)
+# Spectrogram Visualiser 
 
-FPGA project targeting the **Sipeed Tang Nano 20K** development board 
+Built for the Tang Nano 20K FPGA development board 
 
 ## Running
 
@@ -54,3 +54,7 @@ MS = Word Select (WS / LRCK) - determines left or right channel
 CCK = Serial Clock (SCK / BCLK) - synchronises the bits
 
 L/R = Channel Select (Tie to GND for left, VDD for right)
+
+## Documentation 
+
+Refer to `docs/` folder
