@@ -17,7 +17,7 @@ module top (
     wire clk_pixel;   // 74.25 MHz
     wire clk_serial;  // 371.25 MHz
     wire pll_locked;
-    wire pll_rst = ~btn[0];     // Press S1 (btn[0]) to hold PLL in reset
+    wire pll_rst = 1'b0; // Hardcoded to 0 so PLL runs unconditionally
 
     pll_pixel u_pll (
         .clk_in     (clk),
@@ -83,14 +83,17 @@ module top (
     end
     wire ref_blink = ref_counter[24];     // Toggles at ~0.8 Hz (27 MHz / 2^25)
     
-    assign led = ~{
-        1'b1,           // led[5]
-        ~btn[1],        // led[4]
-        ~btn[0],        // led[3]
-        ref_blink,      // led[2]
-        pixel_blink,    // led[1]
-        pll_locked      // led[0]
-    };
+    // Onboard LEDs (active-low: 0 = lit)
+    // Symmetrically assign so status is clear regardless of left-to-right reading:
+    // led[0] & led[5]: SOLID ON when PLL is locked
+    // led[1] & led[4]: BLINK (~1.1 Hz) when pixel clock is running
+    // led[2] & led[3]: BLINK (~0.8 Hz) when 27MHz crystal is running
+    assign led[0] = ~pll_locked;
+    assign led[1] = ~pixel_blink;
+    assign led[2] = ~ref_blink;
+    assign led[3] = ~ref_blink;
+    assign led[4] = ~pixel_blink;
+    assign led[5] = ~pll_locked;
 
 endmodule
 

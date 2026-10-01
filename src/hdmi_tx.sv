@@ -14,7 +14,7 @@ Refer to Gowin DVI TX RX IP guide chapter 3.3.1
     bits and perfectly serializes them into a 1-bit high-speed stream using a 
     Double Data Rate (DDR) fast clock.
  3. It takes the single-ended high-speed bitstream and passes it through a 
-    TLVDS_OBUF primitive. This is another Gowin hardware primitive that converts 
+    ELVDS_OBUF primitive. This is another Gowin hardware primitive that converts 
     a single voltage signal into a true differential signal pair (P and N) required 
     by the physical HDMI cable.
 */
@@ -120,11 +120,11 @@ module hdmi_tx (
         .RESET(~rst_n)
     );
 
-    // Clock channel (outputs 10'b1111100000)
+    // Clock channel (outputs 10'b0000011111 matching Gowin DVI IP core)
     OSER10 oser_clk (
         .Q(tmds_clk_serial),
-        .D0(1'b1), .D1(1'b1), .D2(1'b1), .D3(1'b1), .D4(1'b1),
-        .D5(1'b0), .D6(1'b0), .D7(1'b0), .D8(1'b0), .D9(1'b0),
+        .D0(1'b0), .D1(1'b0), .D2(1'b0), .D3(1'b0), .D4(1'b0),
+        .D5(1'b1), .D6(1'b1), .D7(1'b1), .D8(1'b1), .D9(1'b1),
         .FCLK(serial_clk),
         .PCLK(pixel_clk),
         .RESET(~rst_n)

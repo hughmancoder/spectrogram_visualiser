@@ -63,7 +63,7 @@ module pll_pixel (
 `else
     wire clk_serial;
     rPLL #(
-        .FCLKIN("27.0"),
+        .FCLKIN("27"),
         .DEVICE("GW2AR-18C"),
         .IDIV_SEL(3),      // PFD = 27 / 4 = 6.75 MHz
         .FBDIV_SEL(54),    // CLKOUT = 6.75 * 55 = 371.25 MHz
@@ -71,7 +71,19 @@ module pll_pixel (
         .DYN_IDIV_SEL("false"),
         .DYN_FBDIV_SEL("false"),
         .DYN_ODIV_SEL("false"),
-        .DYN_DA_EN("false")
+        .DYN_DA_EN("true"),
+        .DUTYDA_SEL("1000"),
+        .CLKFB_SEL("internal"),
+        .CLKOUT_FT_DIR(1'b1),
+        .CLKOUTP_FT_DIR(1'b1),
+        .CLKOUT_DLY_STEP(0),
+        .CLKOUTP_DLY_STEP(0),
+        .CLKOUT_BYPASS("false"),
+        .CLKOUTP_BYPASS("false"),
+        .CLKOUTD_BYPASS("false"),
+        .DYN_SDIV_SEL(2),
+        .CLKOUTD_SRC("CLKOUT"),
+        .CLKOUTD3_SRC("CLKOUT")
     ) pll_inst (
         .CLKIN(clk_in),
         .CLKOUT(clk_serial),
@@ -96,7 +108,8 @@ module pll_pixel (
     ) clkdiv_inst (
         .CLKOUT(pixel_clk),
         .HCLKIN(clk_serial),
-        .RESETN(~rst)
+        .RESETN(~rst & locked),
+        .CALIB(1'b1)
     );
 
     assign serial_clk = clk_serial;
