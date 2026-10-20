@@ -31,7 +31,7 @@ module video_sync_tb;
     int de_lines_count = 0;
 
     initial begin
-        $dumpfile("video_sync_tb.vcd");
+        $dumpfile("build/video_sync_tb.vcd");
         $dumpvars(0, video_sync_tb);
         
         rst_n = 0;

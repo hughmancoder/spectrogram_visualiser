@@ -58,3 +58,12 @@ L/R = Channel Select (Tie to GND for left, VDD for right)
 ## Documentation 
 
 Refer to `docs/` folder
+
+## Notes
+
+**Clocks**
+System has two clocks running at different frequencies: 
+system lock: 64.8 MHz, needed for SDRAM
+Display clock (pix_clk): 74.25 MHz for HDMI protocol
+
+A full 1280×720 frame at 16-bit colour (RGB565) is 1280 × 720 × 2 bytes ≈ 1.84 MB. The Tang Nano 20K only has ~82 KB of internal Block SRAM (BSRAM), so the 8Mb of avialable SDRAM will can be used to store fft frames.

@@ -4,14 +4,16 @@ module pll_pixel_tb;
 
     reg clk_in = 0;
     reg rst = 0;
-    wire clk_out;
+    wire pixel_clk;
+    wire serial_clk;
     wire locked;
 
     pll_pixel uut (
-        .clk_in  (clk_in),
-        .rst     (rst),
-        .clk_out (clk_out),
-        .locked  (locked)
+        .clk_in     (clk_in),
+        .rst        (rst),
+        .pixel_clk  (pixel_clk),
+        .serial_clk (serial_clk),
+        .locked     (locked)
     );
 
     // 27 MHz reference clock generator (half-period ~18.5185 ns)
@@ -25,9 +27,9 @@ module pll_pixel_tb;
         $dumpvars(0, pll_pixel_tb);
 
     
-        @(posedge clk_out);
+        @(posedge pixel_clk);
         t1 = $realtime;
-        @(posedge clk_out);
+        @(posedge pixel_clk);
         t_period = $realtime - t1;
         freq_mhz = 1000.0 / t_period;
 
