@@ -3,7 +3,7 @@
 /*
  async_fifo testbench
 
- Verifies the contract in docs/phase2_spec.md (async_fifo):
+ Verifies async_fifo:
    T1 reset state
    T2 first-word-fall-through latency / data
    T3 fill to full (writes while full are dropped), wr_count at full

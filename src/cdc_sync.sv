@@ -16,12 +16,12 @@ module cdc_sync #(
 );
 
 // internal storage
-logic [WIDTH-1:0] reg_q [STAGES-1:0];
+(* async_reg = "true" *) logic [WIDTH-1:0] reg_q [STAGES-1:0];
 
 // negedge for async reset
 always_ff @(posedge clk or negedge rst_n) begin
     if (~rst_n) begin
-        // reset all stages to zero on high
+        // reset all stages to zero on reset
         for (int i = 0; i < STAGES; i++) begin
             reg_q[i] <= '0;
         end
@@ -29,7 +29,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         // Shift registers cascade
         reg_q[0] <= d;
         for (int i = 1; i < STAGES; i++) begin
-            req_q[i] <= req_q[i - 1];
+            reg_q[i] <= reg_q[i - 1];
         end
     end
 end
