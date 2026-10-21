@@ -1,24 +1,25 @@
 `default_nettype none
 
 /*
- TMDS Encoder (Transition Minimised Differential Signaling).
+TMDS Encoder (Transition Minimised Differential Signaling).
 
- Refer to Gowin DVI TX RX IP guide chapter 3
- 
- This module implements the standard DVI 1.0 / HDMI TMDS encoding algorithm.
- It takes 8-bit parallel color data (Red, Green, or Blue) and encodes it into 
- a 10-bit symbol.
- 
- 1. Transition Minimisation: The data is XOR'd or XNOR'd to minimise the number of 
-    0->1 and 1->0 transitions. This reduces electromagnetic interference (EMI) 
-    over the high-speed HDMI cable.
- 2. DC Balancing: It keeps track of the "disparity" (the running difference between 
-    the number of 1s and 0s transmitted) and optionally inverts the output to ensure 
-    that over time, the number of 1s and 0s is exactly equal. This keeps the DC voltage 
-    on the physical wire balanced at exactly 0V differential.
- 
- During the "blanking" periods (when DE is 0), it transmits special 10-bit control 
- tokens that encode the HSYNC and VSYNC signals.
+Implemented from gowin user guide
+Refer to Gowin DVI TX RX IP guide chapter 3
+
+This module implements the standard DVI 1.0 / HDMI TMDS encoding algorithm.
+It takes 8-bit parallel color data (Red, Green, or Blue) and encodes it into 
+a 10-bit symbol.
+
+1. Transition Minimisation: The data is XOR'd or XNOR'd to minimise the number of 
+0->1 and 1->0 transitions. This reduces electromagnetic interference (EMI) 
+over the high-speed HDMI cable.
+2. DC Balancing: It keeps track of the "disparity" (the running difference between 
+the number of 1s and 0s transmitted) and optionally inverts the output to ensure 
+that over time, the number of 1s and 0s is exactly equal. This keeps the DC voltage 
+on the physical wire balanced at exactly 0V differential.
+
+During the "blanking" periods (when DE is 0), it transmits special 10-bit control 
+tokens that encode the HSYNC and VSYNC signals.
 */
 
 module tmds_encoder (

@@ -11,23 +11,10 @@ BOARD      ?= tangnano20k
 PKG_SRCS   := $(wildcard src/*_pkg.sv)
 RTL_SRCS   := $(filter-out $(PKG_SRCS),$(wildcard src/*.sv))
 
-# REF=1 : borrow the hidden reference implementation (.reference/phase2_rtl)
-#         for any module you have not written yet. Your own src/ file wins if
-#         both exist. Simulation only - "if you get stuck" escape hatch.
-REF_DIR    := .reference/phase2_rtl
-ifeq ($(REF),1)
-    REF_SRCS := $(filter-out $(addprefix $(REF_DIR)/,$(notdir $(RTL_SRCS))),$(wildcard $(REF_DIR)/*.sv))
-else
-    REF_SRCS :=
-endif
-
 SRCS       ?= $(PKG_SRCS) $(RTL_SRCS)
 CST        ?= constraints/tangnano20k.cst
 
-# Simulation-only models (e.g. SDRAM behavioural model)
-SIM_MODELS := $(wildcard sim/models/*.sv)
-
-# Testbench selection (e.g. make sim TB=top_tb or make sim TB=sim/top_tb.v)
+# Testbench selection (e.g. make sim TB=top_tb or make sim TB=video_sync_tb)
 TB         ?= top_tb
 TB_NAME    := $(notdir $(basename $(TB)))
 ifeq ($(suffix $(TB)),.sv)
@@ -35,13 +22,13 @@ ifeq ($(suffix $(TB)),.sv)
 else
     TB_FILE := sim/$(TB_NAME).sv
 endif
-TB_SRCS    := $(PKG_SRCS) $(RTL_SRCS) $(REF_SRCS) $(SIM_MODELS) $(TB_FILE)
+TB_SRCS    := $(PKG_SRCS) $(RTL_SRCS) $(TB_FILE)
 
-# Extra iverilog flags, e.g. TB_PARAMS="-Psdram_ctrl_tb.BURST_LEN=8"
+# Extra iverilog flags
 TB_PARAMS  ?=
 
-# Phase 2 regression list for `make test`
-TESTS      ?= async_fifo_tb sdram_ctrl_tb framebuffer_tb
+# Regression test list for `make test`
+TESTS      ?= video_sync_tb top_tb
 
 BUILD_DIR  ?= build
 
@@ -106,8 +93,7 @@ help:
 	@echo "  make sim         - Run default simulation (sim/top_tb.v)"
 	@echo "  make sim TB=name - Run specific testbench (e.g. TB=top_tb or TB=sim/my_tb.v)"
 	@echo "  make waves       - Open simulation waveforms in GTKWave / Surfer (supports TB=name)"
-	@echo "  make test        - Run Phase 2 regression ($(TESTS))"
-	@echo "  make sim TB=x REF=1 - Simulate using hidden reference RTL for modules you haven't written"
+	@echo "  make test        - Run regression testbenches ($(TESTS))"
 	@echo "  make clean       - Clean build artifacts"
 	@echo "  make check-tools - Verify toolchain installation status"
 	@echo "  make setup-toolchain - Download & install OSS CAD Suite for macOS"
@@ -183,7 +169,7 @@ test: | $(BUILD_DIR)
 	for t in $(TESTS); do \
 		echo "==> $$t"; \
 		if $(MAKE) --no-print-directory sim TB=$$t VVP="$(VVP)" \
-		     > $(BUILD_DIR)/$$t.log 2>&1 && grep -q "TEST PASSED" $(BUILD_DIR)/$$t.log; then \
+		     > $(BUILD_DIR)/$$t.log 2>&1 && grep -qiE "TEST PASSED|ALL CHECKS PASSED|ALL TESTS PASSED" $(BUILD_DIR)/$$t.log; then \
 			echo "    PASS"; pass=$$((pass+1)); \
 		else \
 			echo "    FAIL (see $(BUILD_DIR)/$$t.log)"; fail=$$((fail+1)); \

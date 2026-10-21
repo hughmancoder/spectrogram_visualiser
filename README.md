@@ -1,5 +1,6 @@
-# Spectrogram Visualiser 
+# Spectrogram 
 
+Instantaneous Spectrum Analser
 Built for the Tang Nano 20K FPGA development board. 
 
 Work in Progress
@@ -68,30 +69,20 @@ Refer to `docs/` folder
 
 ## Notes
 
-**Clocks**
-System has two clocks running at different frequencies: 
-system lock: 64.8 MHz, needed for SDRAM
-Display clock (pix_clk): 74.25 MHz for HDMI protocol
+- **Pixel Clock** 74.25 MHz (for 1280×720 @ 60 Hz HDMI video)
+- **Serial Clock** 371.25 MHz (5× DDR for 10:1 TMDS bit serialization)
 
-A full 1280×720 frame at 16-bit colour (RGB565) is 1280 × 720 × 2 bytes ≈ 1.84 MB. The Tang Nano 20K only has ~82 KB of internal Block SRAM (BSRAM), so the 8Mb of avialable SDRAM will can be used to store fft frames.
+## Source Files
 
+**Clocking & Reset:**
+- `src/pll_pixel.sv` (rPLL 27 MHz -> 74.25 MHz / 371.25 MHz)
+- `src/reset_sync.sv` (Asynchronous assert, synchronous release reset)
+- `src/cdc_sync.sv` (Multi-stage flip-flop synchroniser)
 
-## Design
+**Video Pipeline:**
+- `src/video_sync.sv` (720p HSYNC/VSYNC/DE & pixel coordinate generator)
+- `src/tmds_encoder.sv` (DVI/HDMI 8b/10b encoder)
+- `src/hdmi_tx.sv` (OSER10 serializer and TLVDS differential pin drivers)
 
-**clk/**
-- `pll_pixel.sv`
-- `pll_sys.sv`
-
-**clock domain crossing/**
-- `cdc_sync.sv`
-- `reset_sync.sv`
-
-**video/**
-- `fb_pkg.sv`
-- `hdmi_tx.sv`
-- `pattern_gen.sv`
-- `tmds_encoder.sv`
-- `video_sync.sv`
-
-**top/**
-- `top.sv`
+**Top Level:**
+- `src/top.sv` (Integrates clocking, generator, and HDMI output)
