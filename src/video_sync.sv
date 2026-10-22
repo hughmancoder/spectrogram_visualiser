@@ -1,8 +1,5 @@
 `default_nettype none
 
-/*
-
-*/
 
 module video_sync #(
     // 1280x720 @ 60Hz settings

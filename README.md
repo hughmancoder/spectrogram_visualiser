@@ -74,15 +74,20 @@ Refer to `docs/` folder
 
 ## Source Files
 
-**Clocking & Reset:**
-- `src/pll_pixel.sv` (rPLL 27 MHz -> 74.25 MHz / 371.25 MHz)
-- `src/reset_sync.sv` (Asynchronous assert, synchronous release reset)
-- `src/cdc_sync.sv` (Multi-stage flip-flop synchroniser)
+**Clocking and Reset:**
+- `src/pll_pixel.sv` 
+- `src/reset_sync.sv` 
+- `src/cdc_sync.sv` 
 
 **Video Pipeline:**
-- `src/video_sync.sv` (720p HSYNC/VSYNC/DE & pixel coordinate generator)
-- `src/tmds_encoder.sv` (DVI/HDMI 8b/10b encoder)
-- `src/hdmi_tx.sv` (OSER10 serializer and TLVDS differential pin drivers)
+- `src/video_sync.sv` 
+- `src/tmds_encoder.sv` 
+- `src/hdmi_tx.sv` 
 
 **Top Level:**
-- `src/top.sv` (Integrates clocking, generator, and HDMI output)
+- `src/top.sv` 
+
+
+1280 x 720 = 201 600
+Xbits: 2^11 = 2047 
+Ybits: Xbits for consitency

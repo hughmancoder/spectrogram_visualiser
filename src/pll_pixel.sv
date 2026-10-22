@@ -29,38 +29,6 @@ module pll_pixel (
     output wire locked   
 );
 
-`ifdef __ICARUS__
-    reg clk_sim_serial = 1'b0;
-    reg clk_sim_pixel = 1'b0;
-    reg lock_sim = 1'b0;
-
-    // 371.25 MHz: period = 2.6936 ns; half-period ~ 1.3468 ns
-    always #1.3468 clk_sim_serial = ~clk_sim_serial;
-
-    int div_cnt = 0;
-    always @(posedge clk_sim_serial) begin
-        if (div_cnt == 4) begin
-            div_cnt <= 0;
-            clk_sim_pixel <= 1'b1;
-        end else if (div_cnt == 2) begin
-            div_cnt <= div_cnt + 1;
-            clk_sim_pixel <= 1'b0;
-        end else begin
-            div_cnt <= div_cnt + 1;
-        end
-    end
-
-    initial begin
-        lock_sim = 1'b0;
-        #100;
-        lock_sim = 1'b1;
-    end
-
-    assign serial_clk = (rst) ? 1'b0 : clk_sim_serial;
-    assign pixel_clk  = (rst) ? 1'b0 : clk_sim_pixel;
-    assign locked     = (rst) ? 1'b0 : lock_sim;
-
-`else
     wire clk_serial;
     rPLL #(
         .FCLKIN("27"),
@@ -113,7 +81,6 @@ module pll_pixel (
     );
 
     assign serial_clk = clk_serial;
-`endif
 
 endmodule
 

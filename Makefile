@@ -22,7 +22,8 @@ ifeq ($(suffix $(TB)),.sv)
 else
     TB_FILE := sim/$(TB_NAME).sv
 endif
-TB_SRCS    := $(PKG_SRCS) $(RTL_SRCS) $(TB_FILE)
+SIM_MODELS ?= sim/gowin_sim.sv
+TB_SRCS    := $(SIM_MODELS) $(PKG_SRCS) $(RTL_SRCS) $(TB_FILE)
 
 # Extra iverilog flags
 TB_PARAMS  ?=
@@ -94,7 +95,8 @@ help:
 	@echo "  make sim TB=name - Run specific testbench (e.g. TB=top_tb or TB=sim/my_tb.v)"
 	@echo "  make waves       - Open simulation waveforms in GTKWave / Surfer (supports TB=name)"
 	@echo "  make test        - Run regression testbenches ($(TESTS))"
-	@echo "  make clean       - Clean build artifacts"
+	@echo "  make clean       - Clean all build & simulation artifacts"
+	@echo "  make clean-sim   - Clean only simulation artifacts (.vvp, .vcd, logs)"
 	@echo "  make check-tools - Verify toolchain installation status"
 	@echo "  make setup-toolchain - Download & install OSS CAD Suite for macOS"
 
@@ -208,9 +210,17 @@ setup-toolchain:
 	@./scripts/setup_toolchain.sh
 
 # ------------------------------------------------------------------------------
-# 7. Clean
+# 7. Clean Targets
 # ------------------------------------------------------------------------------
-.PHONY: clean
+.PHONY: clean clean-sim clean-all distclean
 clean:
-	@echo "==> Cleaning build directory..."
-	@rm -rf $(BUILD_DIR)
+	@echo "==> Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR) *.vcd *.vvp *.fs *.json *.log sim/*.vcd sim/*.vvp sim/*.log
+
+clean-sim:
+	@echo "==> Cleaning simulation artifacts..."
+	@rm -rf $(BUILD_DIR)/*.vcd $(BUILD_DIR)/*.vvp $(BUILD_DIR)/*.log *.vcd *.vvp *.log sim/*.vcd sim/*.vvp sim/*.log
+
+clean-all distclean: clean
+	@echo "==> Cleaning all generated files..."
+	@rm -rf $(BUILD_DIR) .toolchain/

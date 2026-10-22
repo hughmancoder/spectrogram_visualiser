@@ -75,18 +75,6 @@ module hdmi_tx (
     wire [2:0] tmds_serial;
     wire       tmds_clk_serial;
 
-`ifdef __ICARUS__
-    // Bypass Gowin primitives in simulation
-    assign tmds_serial = 3'b000;
-    assign tmds_clk_serial = 1'b0;
-    
-    assign tmds_data_p = tmds_serial;
-    assign tmds_data_n = ~tmds_serial;
-    assign tmds_clk_p  = tmds_clk_serial;
-    assign tmds_clk_n  = ~tmds_clk_serial;
-
-`else
-
     /*
     After encoding, the 8-bit video data is converted into 10-bit data, and then
     the parallel data is converted into serial data by the serializer OSER10.
@@ -154,7 +142,5 @@ module hdmi_tx (
         .O(tmds_clk_p),
         .OB(tmds_clk_n)
     );
-
-`endif
 
 endmodule
